@@ -1,0 +1,21 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node --check index.js && node --check controllers/speakers.js && node --check controllers/admin.js && node --check models/airtable.js && node --check services/email.js && node --check services/openaiScoring.js && node --check middleware/adminAuth.js && node --check lib/withRetry.js && node --check constants/fields.js && node --check routes/speakers.js && node --check routes/admin.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "airtable": "^0.12.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}
