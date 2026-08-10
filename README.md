@@ -36,6 +36,13 @@ created via the Airtable MCP during development — point `AIRTABLE_BASE_ID` at 
 Get an Airtable Personal Access Token at https://airtable.com/create/tokens with
 `data.records:read` and `data.records:write` scopes on that base.
 
+> **Gotcha (hit this live during development):** creating a token does not automatically grant it
+> access to any base — under **Access**, you must explicitly add the specific base(s) it can touch.
+> A token with the right scopes but no base added will authenticate fine (`/v0/meta/whoami` returns
+> 200) yet still 403 with `NOT_AUTHORIZED` on every actual record call. If you hit that, go back to
+> the token's edit page and add the base under Access, or add the token's account as a collaborator
+> on the base directly.
+
 Run both apps (default ports: backend `3001`, frontend `3000` — matches the known port-conflict
 pitfall from the project brief):
 
@@ -61,7 +68,11 @@ per-admin auth):
 ## Deployment (for the demo)
 
 - Frontend → Vercel (root directory `frontend/`, env var `NEXT_PUBLIC_API_BASE_URL`)
-- Backend → Render or Fly.io (root directory `backend/`, build `npm install`, start `npm start`)
+- Backend → Render or Fly.io (root directory `backend/`, build `npm install`, start `npm start`).
+  A `render.yaml` Blueprint is included at the repo root — on Render, "New +" → "Blueprint",
+  point it at this repo, and it provisions the web service with the right build/start commands
+  and env var slots (Airtable/OpenAI/Resend/admin keys still need to be filled in by hand, since
+  secrets aren't stored in the blueprint).
 - CORS is left permissive (`cors()`, no origin restriction) to avoid a last-minute CORS bug during
   the hackathon — tighten this post-hackathon.
 

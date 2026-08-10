@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: sessionboard-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: AIRTABLE_API_KEY
+        sync: false
+      - key: AIRTABLE_BASE_ID
+        value: appvjiE0bXbKXtE29
+      - key: AIRTABLE_TABLE_NAME
+        value: SPEAKER_SUBMISSIONS
+      - key: ADMIN_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        value: onboarding@resend.dev
+      - key: FRONTEND_URL
+        sync: false
