@@ -4,7 +4,25 @@ tech conference audience, signal of speaker expertise from the bio, and overall 
 This is an assist for a human evaluator, not a final decision.
 Respond with strict JSON only: {"score": <integer 1-10>, "rationale": "<2-3 sentence explanation>"}`;
 
+const { scoreSubmissionViaCodex } = require('./codexScoring');
+
 async function scoreSubmission({ bio, talkTitle, talkDescription }) {
+  try {
+    return await scoreViaOpenAI({ bio, talkTitle, talkDescription });
+  } catch (openaiError) {
+    // No key / no credits / API down — fall back to the locally-authenticated
+    // Codex CLI so the assist still works. Surface the original error if the
+    // fallback also fails.
+    try {
+      const result = await scoreSubmissionViaCodex({ bio, talkTitle, talkDescription });
+      return { ...result, provider: 'codex-cli' };
+    } catch {
+      throw openaiError;
+    }
+  }
+}
+
+async function scoreViaOpenAI({ bio, talkTitle, talkDescription }) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     const error = new Error('OpenAI is not configured. Set OPENAI_API_KEY.');
