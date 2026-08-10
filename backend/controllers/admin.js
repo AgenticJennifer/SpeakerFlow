@@ -40,9 +40,11 @@ async function updateStatusHandler(req, res, next) {
       return res.status(400).json({ error: `status must be one of ${VALID_STATUSES.join(', ')}` });
     }
 
-    const submission = await updateSubmissionStatus(req.params.id, status);
+    // Model returns editToken so the email can build the self-service link;
+    // strip it from the HTTP response so it never reaches the admin UI.
+    const { editToken, ...submission } = await updateSubmissionStatus(req.params.id, status);
 
-    sendStatusChangeEmail(submission, status).catch((error) => {
+    sendStatusChangeEmail({ ...submission, editToken }, status).catch((error) => {
       console.error('Failed to send status-change email:', error);
     });
 

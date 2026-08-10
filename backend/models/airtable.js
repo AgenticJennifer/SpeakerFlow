@@ -133,7 +133,9 @@ async function updateSubmissionStatus(id, status) {
   const updated = await withRetry(() =>
     getTable().update(id, { [FIELDS.STATUS]: status })
   );
-  return toSubmission(updated);
+  // includeToken so the status-change email can build the self-service link.
+  // The admin controller strips editToken before sending the HTTP response.
+  return toSubmission(updated, { includeToken: true });
 }
 
 async function updateSubmissionEvaluation(id, { evaluatorScore, evaluatorNotes }) {
