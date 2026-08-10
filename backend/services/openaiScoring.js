@@ -2,7 +2,11 @@ const SYSTEM_PROMPT = `You are an assistant helping conference evaluators screen
 Score the submission from 1-10 based on: clarity of the talk description, relevance to a general
 tech conference audience, signal of speaker expertise from the bio, and overall audience value.
 This is an assist for a human evaluator, not a final decision.
-Respond with strict JSON only: {"score": <integer 1-10>, "rationale": "<2-3 sentence explanation>"}`;
+Also write a neutral two-sentence summary of the talk for the review card, and suggest the single
+best-fitting track from: "AI & ML", "Infrastructure & Observability", "Security",
+"Web & Frontend", "Leadership & Process", "General".
+Respond with strict JSON only:
+{"score": <integer 1-10>, "rationale": "<2-3 sentence explanation>", "summary": "<2 sentence summary>", "suggestedTrack": "<track name>"}`;
 
 const { scoreSubmissionViaCodex } = require('./codexScoring');
 
@@ -15,7 +19,7 @@ async function scoreSubmission({ bio, talkTitle, talkDescription }) {
     // fallback also fails.
     try {
       const result = await scoreSubmissionViaCodex({ bio, talkTitle, talkDescription });
-      return { ...result, provider: 'codex-cli' };
+      return { summary: '', suggestedTrack: '', ...result, provider: 'codex-cli' };
     } catch {
       throw openaiError;
     }
@@ -62,9 +66,14 @@ async function scoreViaOpenAI({ bio, talkTitle, talkDescription }) {
   try {
     const parsed = JSON.parse(raw);
     const score = Number.isInteger(parsed.score) ? parsed.score : null;
-    return { score, rationale: parsed.rationale || raw };
+    return {
+      score,
+      rationale: parsed.rationale || raw,
+      summary: parsed.summary || '',
+      suggestedTrack: parsed.suggestedTrack || '',
+    };
   } catch {
-    return { score: null, rationale: raw };
+    return { score: null, rationale: raw, summary: '', suggestedTrack: '' };
   }
 }
 

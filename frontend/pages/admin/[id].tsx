@@ -20,7 +20,7 @@ function AdminDetail({ adminKey, id }: { adminKey: string; id: string }) {
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'saved'>('idle');
   const [evaluatorScore, setEvaluatorScore] = useState('');
   const [evaluatorNotes, setEvaluatorNotes] = useState('');
   const [savingEvaluation, setSavingEvaluation] = useState(false);
@@ -38,15 +38,22 @@ function AdminDetail({ adminKey, id }: { adminKey: string; id: string }) {
   }, [adminKey, id]);
 
   async function changeStatus(status: SubmissionStatus) {
-    setUpdatingStatus(true);
+    if (!submission) return;
+    // Optimistic update: reflect the new status immediately, sync in the
+    // background, and roll back if the API rejects it.
+    const previous = submission;
+    setSubmission({ ...submission, status });
+    setSyncState('syncing');
     setError('');
     try {
       const { submission: updated } = await adminUpdateStatus(adminKey, id, status);
       setSubmission(updated);
+      setSyncState('saved');
+      setTimeout(() => setSyncState('idle'), 2000);
     } catch (err) {
+      setSubmission(previous);
+      setSyncState('idle');
       setError(err instanceof ApiError ? err.message : 'Failed to update status');
-    } finally {
-      setUpdatingStatus(false);
     }
   }
 
@@ -106,17 +113,25 @@ function AdminDetail({ adminKey, id }: { adminKey: string; id: string }) {
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-5 flex flex-wrap items-center gap-2">
             {STATUS_ACTIONS.map((status) => (
               <button
                 key={status}
                 onClick={() => changeStatus(status)}
-                disabled={updatingStatus || submission.status === status}
+                disabled={submission.status === status}
                 className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
               >
                 Mark {status}
               </button>
             ))}
+            {syncState !== 'idle' && (
+              <span
+                className={`text-xs ${syncState === 'syncing' ? 'text-slate-400' : 'text-green-600'}`}
+                aria-live="polite"
+              >
+                {syncState === 'syncing' ? 'Syncing…' : 'Saved ✓'}
+              </span>
+            )}
           </div>
         </div>
 

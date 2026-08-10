@@ -41,7 +41,19 @@ export default function ScoreAssist({ adminKey, submission, onScored }: ScoreAss
 
       {submission.aiSuggestedScore != null && (
         <div className="mt-3">
-          <p className="text-2xl font-bold text-purple-900">{submission.aiSuggestedScore}/10</p>
+          <div className="flex items-center gap-3">
+            <p className="text-2xl font-bold text-purple-900">{submission.aiSuggestedScore}/10</p>
+            {submission.aiSuggestedTrack && (
+              <span className="rounded-full bg-purple-100 px-2.5 py-1 text-xs font-medium text-purple-800 ring-1 ring-inset ring-purple-200">
+                Suggested track: {submission.aiSuggestedTrack}
+              </span>
+            )}
+          </div>
+          {submission.aiSummary && (
+            <p className="mt-2 rounded-md bg-white/70 p-2 text-sm italic text-purple-900">
+              {submission.aiSummary}
+            </p>
+          )}
           <p className="mt-1 text-sm text-purple-800">{submission.aiRationale}</p>
         </div>
       )}

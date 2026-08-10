@@ -13,6 +13,8 @@ export interface Submission {
   editToken: string;
   aiSuggestedScore: number | null;
   aiRationale: string;
+  aiSummary: string;
+  aiSuggestedTrack: string;
   evaluatorScore: number | null;
   evaluatorNotes: string;
   createdTime: string;
@@ -114,4 +116,55 @@ export function adminScoreSubmission(adminKey: string, id: string) {
     method: 'POST',
     headers: adminHeaders(adminKey),
   });
+}
+
+export function adminSeedDemo(adminKey: string) {
+  return request<{ created: number }>('/api/admin/demo/seed', {
+    method: 'POST',
+    headers: adminHeaders(adminKey),
+  });
+}
+
+export function adminClearDemo(adminKey: string) {
+  return request<{ deleted: number }>('/api/admin/demo', {
+    method: 'DELETE',
+    headers: adminHeaders(adminKey),
+  });
+}
+
+// Client-side near-duplicate detection for the review dashboard: flags talks
+// whose titles share most of their significant words. Cheap (no API call) and
+// deliberately conservative — it surfaces likely resubmissions/copies, the
+// human reviewer decides.
+const STOP_WORDS = new Set(['a', 'an', 'the', 'of', 'in', 'on', 'for', 'and', 'to', 'with', 'your', 'is']);
+
+function titleTokens(title: string): Set<string> {
+  return new Set(
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
+  );
+}
+
+export function findDuplicateIds(submissions: Submission[]): Set<string> {
+  const duplicates = new Set<string>();
+  for (let i = 0; i < submissions.length; i++) {
+    for (let j = i + 1; j < submissions.length; j++) {
+      const a = titleTokens(submissions[i].talkTitle);
+      const b = titleTokens(submissions[j].talkTitle);
+      if (a.size === 0 || b.size === 0) continue;
+      let shared = 0;
+      a.forEach((t) => {
+        if (b.has(t)) shared++;
+      });
+      const overlap = shared / Math.min(a.size, b.size);
+      if (overlap >= 0.7) {
+        duplicates.add(submissions[i].id);
+        duplicates.add(submissions[j].id);
+      }
+    }
+  }
+  return duplicates;
 }

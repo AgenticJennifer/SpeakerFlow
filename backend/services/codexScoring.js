@@ -12,8 +12,11 @@ function buildPrompt({ bio, talkTitle, talkDescription }) {
     'Score the submission from 1-10 based on: clarity of the talk description, relevance',
     'to a general tech conference audience, signal of speaker expertise from the bio, and',
     'overall audience value. This is an assist for a human evaluator, not a final decision.',
+    'Also write a neutral two-sentence summary of the talk for the review card, and suggest',
+    'the single best-fitting track from: "AI & ML", "Infrastructure & Observability",',
+    '"Security", "Web & Frontend", "Leadership & Process", "General".',
     'Respond with strict JSON only, no markdown fences:',
-    '{"score": <integer 1-10>, "rationale": "<2-3 sentence explanation>"}',
+    '{"score": <integer 1-10>, "rationale": "<2-3 sentence explanation>", "summary": "<2 sentence summary>", "suggestedTrack": "<track name>"}',
     '',
     `Speaker bio: ${bio || '(none provided)'}`,
     `Talk title: ${talkTitle || '(none provided)'}`,
@@ -64,10 +67,15 @@ function scoreSubmissionViaCodex({ bio, talkTitle, talkDescription }) {
       const parsed = extractJson(stdout);
       if (!parsed) {
         // Same defensive posture as the OpenAI path: malformed output never throws.
-        return resolve({ score: null, rationale: stdout.trim().slice(0, 500) });
+        return resolve({ score: null, rationale: stdout.trim().slice(0, 500), summary: '', suggestedTrack: '' });
       }
       const score = Number.isInteger(parsed.score) ? parsed.score : null;
-      resolve({ score, rationale: parsed.rationale || String(parsed) });
+      resolve({
+        score,
+        rationale: parsed.rationale || String(parsed),
+        summary: parsed.summary || '',
+        suggestedTrack: parsed.suggestedTrack || '',
+      });
     });
   });
 }

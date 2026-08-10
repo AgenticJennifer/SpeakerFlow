@@ -30,6 +30,8 @@ function toSubmission(record, { includeToken = false } = {}) {
     status: record.get(FIELDS.STATUS) || STATUS.SUBMITTED,
     aiSuggestedScore: record.get(FIELDS.AI_SUGGESTED_SCORE) ?? null,
     aiRationale: record.get(FIELDS.AI_RATIONALE) || '',
+    aiSummary: record.get(FIELDS.AI_SUMMARY) || '',
+    aiSuggestedTrack: record.get(FIELDS.AI_SUGGESTED_TRACK) || '',
     evaluatorScore: record.get(FIELDS.EVALUATOR_SCORE) ?? null,
     evaluatorNotes: record.get(FIELDS.EVALUATOR_NOTES) || '',
     createdTime: record._rawJson.createdTime,
@@ -147,14 +149,68 @@ async function updateSubmissionEvaluation(id, { evaluatorScore, evaluatorNotes }
   return toSubmission(updated);
 }
 
-async function updateSubmissionScore(id, { aiScore, aiRationale }) {
+async function updateSubmissionScore(id, { aiScore, aiRationale, aiSummary, aiSuggestedTrack }) {
   const updated = await withRetry(() =>
     getTable().update(id, {
       [FIELDS.AI_SUGGESTED_SCORE]: aiScore,
       [FIELDS.AI_RATIONALE]: aiRationale,
+      [FIELDS.AI_SUMMARY]: aiSummary || '',
+      [FIELDS.AI_SUGGESTED_TRACK]: aiSuggestedTrack || '',
     })
   );
   return toSubmission(updated);
+}
+
+// --- Demo data (judge demo mode) --------------------------------------------
+// Demo records are marked by this email domain so they can be wiped in one
+// call without touching real submissions.
+const DEMO_EMAIL_DOMAIN = 'demo.sessionboard.local';
+
+async function seedDemoSubmissions(rows) {
+  const created = [];
+  for (const row of rows) {
+    const record = await withRetry(() =>
+      getTable().create({
+        [FIELDS.NAME]: row.name,
+        [FIELDS.EMAIL]: row.email,
+        [FIELDS.BIO]: row.bio,
+        [FIELDS.TALK_TITLE]: row.talkTitle,
+        [FIELDS.TALK_DESCRIPTION]: row.talkDescription,
+        [FIELDS.STATUS]: row.status,
+        [FIELDS.EDIT_TOKEN]: crypto.randomUUID(),
+        ...(row.aiSuggestedScore != null && {
+          [FIELDS.AI_SUGGESTED_SCORE]: row.aiSuggestedScore,
+          [FIELDS.AI_RATIONALE]: row.aiRationale || '',
+          [FIELDS.AI_SUMMARY]: row.aiSummary || '',
+          [FIELDS.AI_SUGGESTED_TRACK]: row.aiSuggestedTrack || '',
+        }),
+        ...(row.evaluatorScore != null && {
+          [FIELDS.EVALUATOR_SCORE]: row.evaluatorScore,
+          [FIELDS.EVALUATOR_NOTES]: row.evaluatorNotes || '',
+        }),
+      })
+    );
+    created.push(toSubmission(record));
+  }
+  return created;
+}
+
+async function clearDemoSubmissions() {
+  const records = await withRetry(() =>
+    getTable()
+      .select({
+        filterByFormula: `FIND('@${DEMO_EMAIL_DOMAIN}', {${FIELDS.EMAIL}})`,
+      })
+      .all()
+  );
+  let deleted = 0;
+  // destroy() accepts at most 10 record ids per call.
+  for (let i = 0; i < records.length; i += 10) {
+    const batch = records.slice(i, i + 10).map((r) => r.id);
+    await withRetry(() => getTable().destroy(batch));
+    deleted += batch.length;
+  }
+  return deleted;
 }
 
 module.exports = {
@@ -166,4 +222,7 @@ module.exports = {
   updateSubmissionStatus,
   updateSubmissionEvaluation,
   updateSubmissionScore,
+  seedDemoSubmissions,
+  clearDemoSubmissions,
+  DEMO_EMAIL_DOMAIN,
 };

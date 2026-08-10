@@ -1,9 +1,35 @@
 # Sessionboard Clone (Hackathon MVP)
 
 Open-source clone of Sessionboard: speaker submission, self-service portal, admin review dashboard,
-status-change email notifications, and OpenAI-assisted evaluator scoring.
+status-change email notifications, and AI-assisted evaluator scoring.
 
 Deadline: 2026-08-12 22:00 PST. Scope was deliberately narrowed for the timeline — see "Out of scope" below.
+
+## Judge quickstart (under a minute)
+
+1. Open the admin dashboard (`/admin`) and sign in with the admin key from the deployment notes.
+2. Click **✨ Load demo data** — this seeds six realistic submissions covering every status
+   (Submitted / Under Review / Accepted / Rejected), pre-run AI assists with summaries and
+   suggested tracks, evaluator notes, and a low-quality proposal that was rejected.
+3. Click into any submission to see the AI reviewer card (score, two-sentence summary, suggested
+   track, rationale), one-click status changes with optimistic UI, and evaluator scoring.
+4. Submit your own talk at `/submit` — the success screen gives you the speaker's self-service
+   link, and the confirmation email (console or Resend) contains the same link.
+5. Done exploring? **Clear demo data** removes exactly the seeded records and nothing else.
+
+## Feature checklist
+
+| Brief requirement | Where |
+|---|---|
+| Speaker submission form | `/submit` |
+| Self-service portal (view/edit via tokenized link, no login) | `/my-submission/[token]` |
+| Admin review dashboard with status filters | `/admin` |
+| Status workflow (Submitted → Under Review → Accepted/Rejected) | admin detail page, optimistic UI |
+| Email notifications on submit + status change | Resend, with zero-setup console fallback |
+| AI-assisted evaluation (assist-only, never auto-decides) | score + summary + suggested track + rationale |
+| Duplicate submission detection | near-duplicate title flagging on the review dashboard |
+| Judge demo mode | one-click seed/clear of realistic demo data |
+| Airtable as datastore | all persistence, with retry/backoff for rate limits |
 
 ## Stack
 
@@ -63,7 +89,11 @@ per-admin auth):
 - `GET /api/admin/submissions/:id`
 - `PATCH /api/admin/submissions/:id/status`
 - `PATCH /api/admin/submissions/:id/evaluation`
-- `POST /api/admin/submissions/:id/score` — OpenAI-assisted scoring
+- `POST /api/admin/submissions/:id/score` — AI-assisted scoring (score, 2-sentence summary,
+  suggested track, rationale). Uses the OpenAI API when `OPENAI_API_KEY` has credit; otherwise
+  falls back automatically to the locally-authenticated Codex CLI (`codex login`).
+- `POST /api/admin/demo/seed` — seed judge demo data (6 realistic submissions)
+- `DELETE /api/admin/demo` — remove exactly the demo records (matched by demo email domain)
 
 ## Deployment (for the demo)
 

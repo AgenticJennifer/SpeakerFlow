@@ -8,6 +8,8 @@ const FIELDS = {
   EDIT_TOKEN: 'Edit Token',
   AI_SUGGESTED_SCORE: 'AI Suggested Score',
   AI_RATIONALE: 'AI Rationale',
+  AI_SUMMARY: 'AI Summary',
+  AI_SUGGESTED_TRACK: 'AI Suggested Track',
   EVALUATOR_SCORE: 'Evaluator Score',
   EVALUATOR_NOTES: 'Evaluator Notes',
 };

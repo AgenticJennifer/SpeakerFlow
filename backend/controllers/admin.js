@@ -4,7 +4,10 @@ const {
   updateSubmissionStatus,
   updateSubmissionEvaluation,
   updateSubmissionScore,
+  seedDemoSubmissions,
+  clearDemoSubmissions,
 } = require('../models/airtable');
+const { DEMO_SUBMISSIONS } = require('../constants/demoData');
 const { scoreSubmission } = require('../services/openaiScoring');
 const { sendStatusChangeEmail } = require('../services/email');
 const { STATUS } = require('../constants/fields');
@@ -70,7 +73,7 @@ async function updateEvaluationHandler(req, res, next) {
 async function scoreSubmissionHandler(req, res, next) {
   try {
     const submission = await getSubmissionById(req.params.id);
-    const { score, rationale } = await scoreSubmission({
+    const { score, rationale, summary, suggestedTrack } = await scoreSubmission({
       bio: submission.bio,
       talkTitle: submission.talkTitle,
       talkDescription: submission.talkDescription,
@@ -79,9 +82,31 @@ async function scoreSubmissionHandler(req, res, next) {
     const updated = await updateSubmissionScore(req.params.id, {
       aiScore: score,
       aiRationale: rationale,
+      aiSummary: summary,
+      aiSuggestedTrack: suggestedTrack,
     });
 
     return res.json({ submission: updated });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+// Judge demo mode: seed a realistic set of submissions in one click, and wipe
+// exactly those records (matched by demo email domain) in one click.
+async function seedDemoHandler(req, res, next) {
+  try {
+    const created = await seedDemoSubmissions(DEMO_SUBMISSIONS);
+    return res.status(201).json({ created: created.length });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function clearDemoHandler(req, res, next) {
+  try {
+    const deleted = await clearDemoSubmissions();
+    return res.json({ deleted });
   } catch (error) {
     return next(error);
   }
@@ -93,4 +118,6 @@ module.exports = {
   updateStatusHandler,
   updateEvaluationHandler,
   scoreSubmissionHandler,
+  seedDemoHandler,
+  clearDemoHandler,
 };
