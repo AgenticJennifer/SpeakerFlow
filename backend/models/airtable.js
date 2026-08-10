@@ -19,8 +19,8 @@ function getTable() {
   );
 }
 
-function toSubmission(record) {
-  return {
+function toSubmission(record, { includeToken = false } = {}) {
+  const submission = {
     id: record.id,
     name: record.get(FIELDS.NAME) || '',
     email: record.get(FIELDS.EMAIL) || '',
@@ -28,13 +28,22 @@ function toSubmission(record) {
     talkTitle: record.get(FIELDS.TALK_TITLE) || '',
     talkDescription: record.get(FIELDS.TALK_DESCRIPTION) || '',
     status: record.get(FIELDS.STATUS) || STATUS.SUBMITTED,
-    editToken: record.get(FIELDS.EDIT_TOKEN) || '',
     aiSuggestedScore: record.get(FIELDS.AI_SUGGESTED_SCORE) ?? null,
     aiRationale: record.get(FIELDS.AI_RATIONALE) || '',
     evaluatorScore: record.get(FIELDS.EVALUATOR_SCORE) ?? null,
     evaluatorNotes: record.get(FIELDS.EVALUATOR_NOTES) || '',
     createdTime: record._rawJson.createdTime,
   };
+  if (includeToken) {
+    submission.editToken = record.get(FIELDS.EDIT_TOKEN) || '';
+  }
+  return submission;
+}
+
+const EDIT_TOKEN_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function escapeFormulaString(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
 async function createSpeakerSubmission({ name, email, bio, talkTitle, talkDescription }) {
@@ -56,10 +65,14 @@ async function createSpeakerSubmission({ name, email, bio, talkTitle, talkDescri
 }
 
 async function findRecordByToken(token) {
+  if (typeof token !== 'string' || !EDIT_TOKEN_RE.test(token)) {
+    return null;
+  }
+
   const records = await withRetry(() =>
     getTable()
       .select({
-        filterByFormula: `{${FIELDS.EDIT_TOKEN}} = '${token}'`,
+        filterByFormula: `{${FIELDS.EDIT_TOKEN}} = '${escapeFormulaString(token)}'`,
         maxRecords: 1,
       })
       .firstPage()
@@ -70,7 +83,7 @@ async function findRecordByToken(token) {
 
 async function getSubmissionByToken(token) {
   const record = await findRecordByToken(token);
-  return record ? toSubmission(record) : null;
+  return record ? toSubmission(record, { includeToken: true }) : null;
 }
 
 async function updateSubmissionByToken(token, fields) {
@@ -94,7 +107,7 @@ async function updateSubmissionByToken(token, fields) {
   }
 
   const updated = await withRetry(() => getTable().update(record.id, allowedFields));
-  return toSubmission(updated);
+  return toSubmission(updated, { includeToken: true });
 }
 
 async function getSubmissionById(id) {
@@ -107,12 +120,12 @@ async function listSubmissions({ status } = {}) {
     sort: [{ field: FIELDS.NAME, direction: 'asc' }],
   };
   if (status) {
-    selectOptions.filterByFormula = `{${FIELDS.STATUS}} = '${status}'`;
+    selectOptions.filterByFormula = `{${FIELDS.STATUS}} = '${escapeFormulaString(status)}'`;
   }
 
   const records = await withRetry(() => getTable().select(selectOptions).all());
   return records
-    .map(toSubmission)
+    .map((record) => toSubmission(record))
     .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
 }
 
