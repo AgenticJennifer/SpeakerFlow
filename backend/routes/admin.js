@@ -9,6 +9,7 @@ const {
   getAgendaHandler,
   updateScheduleHandler,
   getDashboardHandler,
+  sendReminderHandler,
   seedDemoHandler,
   clearDemoHandler,
 } = require('../controllers/admin');
@@ -25,6 +26,7 @@ router.post('/submissions/:id/score', scoreSubmissionHandler);
 router.get('/agenda', getAgendaHandler);
 router.patch('/submissions/:id/schedule', updateScheduleHandler);
 router.get('/dashboard', getDashboardHandler);
+router.post('/submissions/:id/remind', sendReminderHandler);
 router.post('/demo/seed', seedDemoHandler);
 router.delete('/demo', clearDemoHandler);
 

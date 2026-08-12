@@ -12,7 +12,7 @@ const {
 } = require('../models/airtable');
 const { DEMO_SUBMISSIONS } = require('../constants/demoData');
 const { scoreSubmission } = require('../services/openaiScoring');
-const { sendStatusChangeEmail, sendCalendarInviteEmail } = require('../services/email');
+const { sendStatusChangeEmail, sendCalendarInviteEmail, sendReminderEmail } = require('../services/email');
 const { buildSessionInvite } = require('../services/icsCalendar');
 const { STATUS } = require('../constants/fields');
 
@@ -172,6 +172,27 @@ async function updateScheduleHandler(req, res, next) {
   }
 }
 
+const VALID_REMINDER_REASONS = ['missingMaterials', 'unscheduled'];
+
+async function sendReminderHandler(req, res, next) {
+  try {
+    const { reason } = req.body || {};
+    if (!VALID_REMINDER_REASONS.includes(reason)) {
+      return res.status(400).json({ error: `reason must be one of ${VALID_REMINDER_REASONS.join(', ')}` });
+    }
+
+    const submission = await getSubmissionById(req.params.id, { includeToken: true });
+    if (submission.status !== STATUS.ACCEPTED) {
+      return res.status(400).json({ error: 'Reminders can only be sent for accepted submissions' });
+    }
+
+    await sendReminderEmail(submission, reason);
+    return res.json({ sent: true });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function getDashboardHandler(req, res, next) {
   try {
     const stats = await getDashboardStats();
@@ -210,6 +231,7 @@ module.exports = {
   getAgendaHandler,
   updateScheduleHandler,
   getDashboardHandler,
+  sendReminderHandler,
   seedDemoHandler,
   clearDemoHandler,
 };

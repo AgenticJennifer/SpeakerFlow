@@ -89,4 +89,28 @@ async function sendCalendarInviteEmail(submission, icsContent) {
   });
 }
 
-module.exports = { sendConfirmationEmail, sendStatusChangeEmail, sendCalendarInviteEmail };
+const REMINDER_MESSAGES = {
+  missingMaterials:
+    'Your talk was accepted, but your bio and/or talk description still look incomplete — ' +
+    'please fill those in so we can finalize your speaker materials.',
+  unscheduled:
+    'Your talk was accepted and is awaiting a schedule slot — no action needed from you yet, ' +
+    'we just wanted to keep you posted.',
+};
+
+async function sendReminderEmail(submission, reason) {
+  const link = selfServiceLink(submission.editToken);
+  const message = REMINDER_MESSAGES[reason] || REMINDER_MESSAGES.missingMaterials;
+  await getProvider().send({
+    to: submission.email,
+    subject: `Reminder: "${submission.talkTitle}"`,
+    body: `Hi ${submission.name},\n\n${message}\n\nUpdate your submission here: ${link}`,
+  });
+}
+
+module.exports = {
+  sendConfirmationEmail,
+  sendStatusChangeEmail,
+  sendCalendarInviteEmail,
+  sendReminderEmail,
+};

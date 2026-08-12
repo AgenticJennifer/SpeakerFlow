@@ -2,7 +2,13 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import AdminLogin from '@/components/AdminLogin';
-import { adminGetDashboard, ApiError, type DashboardBucket, type DashboardStats } from '@/lib/api';
+import {
+  adminGetDashboard,
+  adminSendReminder,
+  ApiError,
+  type DashboardBucket,
+  type DashboardStats,
+} from '@/lib/api';
 
 const POLL_MS = 15000;
 
@@ -11,17 +17,37 @@ function Bucket({
   description,
   bucket,
   tone,
+  reminderReason,
+  adminKey,
 }: {
   title: string;
   description: string;
   bucket: DashboardBucket;
   tone: 'amber' | 'blue' | 'rose';
+  reminderReason?: 'missingMaterials' | 'unscheduled';
+  adminKey: string;
 }) {
+  const [sentIds, setSentIds] = useState<Set<string>>(new Set());
+  const [sendingId, setSendingId] = useState<string | null>(null);
+
   const toneClasses = {
     amber: 'ring-amber-200 bg-amber-50 text-amber-900',
     blue: 'ring-blue-200 bg-blue-50 text-blue-900',
     rose: 'ring-rose-200 bg-rose-50 text-rose-900',
   }[tone];
+
+  async function handleRemind(id: string) {
+    if (!reminderReason) return;
+    setSendingId(id);
+    try {
+      await adminSendReminder(adminKey, id, reminderReason);
+      setSentIds((prev) => new Set(prev).add(id));
+    } catch {
+      // best-effort — the reminder is non-critical, no need to surface a hard error here
+    } finally {
+      setSendingId(null);
+    }
+  }
 
   return (
     <div className={`rounded-xl p-4 ring-1 ${toneClasses}`}>
@@ -31,10 +57,24 @@ function Bucket({
       </div>
       <p className="mt-1 text-xs opacity-80">{description}</p>
       {bucket.items.length > 0 && (
-        <ul className="mt-3 space-y-1 text-xs">
+        <ul className="mt-3 space-y-1.5 text-xs">
           {bucket.items.slice(0, 6).map((item) => (
-            <li key={item.id} className="truncate">
-              {item.name} — {item.talkTitle}
+            <li key={item.id} className="flex items-center justify-between gap-2">
+              <span className="truncate">
+                {item.name} — {item.talkTitle}
+              </span>
+              {reminderReason &&
+                (sentIds.has(item.id) ? (
+                  <span className="shrink-0 text-[11px] opacity-70">Sent</span>
+                ) : (
+                  <button
+                    onClick={() => handleRemind(item.id)}
+                    disabled={sendingId === item.id}
+                    className="shrink-0 rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ring-current hover:bg-white disabled:opacity-50"
+                  >
+                    {sendingId === item.id ? 'Sending…' : 'Remind'}
+                  </button>
+                ))}
             </li>
           ))}
           {bucket.items.length > 6 && <li className="opacity-70">+{bucket.items.length - 6} more</li>}
@@ -107,16 +147,21 @@ function DashboardPage({ adminKey }: { adminKey: string }) {
                 description="Accepted talks with no agenda slot yet."
                 bucket={stats.acceptedUnscheduled}
                 tone="amber"
+                reminderReason="unscheduled"
+                adminKey={adminKey}
               />
               <Bucket
                 title="Awaiting review"
                 description="Submitted / under review with no AI or evaluator score yet."
                 bucket={stats.unscored}
                 tone="blue"
+                adminKey={adminKey}
               />
               <Bucket
                 title="Missing materials"
                 description="Accepted but bio or talk description is incomplete."
+                reminderReason="missingMaterials"
+                adminKey={adminKey}
                 bucket={stats.missingMaterials}
                 tone="rose"
               />

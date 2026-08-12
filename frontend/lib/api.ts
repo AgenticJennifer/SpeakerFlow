@@ -165,6 +165,14 @@ export function adminGetDashboard(adminKey: string) {
   });
 }
 
+export function adminSendReminder(adminKey: string, id: string, reason: 'missingMaterials' | 'unscheduled') {
+  return request<{ sent: boolean }>(`/api/admin/submissions/${id}/remind`, {
+    method: 'POST',
+    headers: adminHeaders(adminKey),
+    body: JSON.stringify({ reason }),
+  });
+}
+
 export function adminSeedDemo(adminKey: string) {
   return request<{ created: number }>('/api/admin/demo/seed', {
     method: 'POST',

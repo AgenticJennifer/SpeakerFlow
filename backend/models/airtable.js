@@ -116,9 +116,9 @@ async function updateSubmissionByToken(token, fields) {
   return toSubmission(updated, { includeToken: true });
 }
 
-async function getSubmissionById(id) {
+async function getSubmissionById(id, { includeToken = false } = {}) {
   const record = await withRetry(() => getTable().find(id));
-  return toSubmission(record);
+  return toSubmission(record, { includeToken });
 }
 
 async function listSubmissions({ status } = {}) {
