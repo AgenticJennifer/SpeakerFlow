@@ -6,6 +6,9 @@ const {
   updateStatusHandler,
   updateEvaluationHandler,
   scoreSubmissionHandler,
+  getAgendaHandler,
+  updateScheduleHandler,
+  getDashboardHandler,
   seedDemoHandler,
   clearDemoHandler,
 } = require('../controllers/admin');
@@ -19,6 +22,9 @@ router.get('/submissions/:id', getSubmissionHandler);
 router.patch('/submissions/:id/status', updateStatusHandler);
 router.patch('/submissions/:id/evaluation', updateEvaluationHandler);
 router.post('/submissions/:id/score', scoreSubmissionHandler);
+router.get('/agenda', getAgendaHandler);
+router.patch('/submissions/:id/schedule', updateScheduleHandler);
+router.get('/dashboard', getDashboardHandler);
 router.post('/demo/seed', seedDemoHandler);
 router.delete('/demo', clearDemoHandler);
 

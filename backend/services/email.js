@@ -1,23 +1,33 @@
 const consoleProvider = {
-  async send({ to, subject, body }) {
+  async send({ to, subject, body, attachment }) {
     console.log(`\n--- [email:console] to=${to} subject="${subject}" ---\n${body}\n---`);
+    if (attachment) {
+      console.log(`[email:console] attachment=${attachment.filename}\n${attachment.content}\n---`);
+    }
   },
 };
 
 const resendProvider = {
-  async send({ to, subject, body }) {
+  async send({ to, subject, body, attachment }) {
+    const payload = {
+      from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+      to: [to],
+      subject,
+      text: body,
+    };
+    if (attachment) {
+      payload.attachments = [
+        { filename: attachment.filename, content: Buffer.from(attachment.content).toString('base64') },
+      ];
+    }
+
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
-        to: [to],
-        subject,
-        text: body,
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -48,16 +58,35 @@ async function sendConfirmationEmail(submission) {
   });
 }
 
-async function sendStatusChangeEmail(submission, newStatus) {
+async function sendStatusChangeEmail(submission, newStatus, icsContent) {
   const link = selfServiceLink(submission.editToken);
+  const scheduledNote = icsContent
+    ? `\n\nYour session is scheduled — a calendar invite is attached for your calendar (Gmail, Outlook, iCal all accept .ics files).`
+    : '';
   await getProvider().send({
     to: submission.email,
     subject: `Your talk submission status: ${newStatus}`,
     body:
       `Hi ${submission.name},\n\n` +
       `The status of your submission "${submission.talkTitle}" has changed to: ${newStatus}.\n\n` +
-      `View it here: ${link}`,
+      `View it here: ${link}${scheduledNote}`,
+    attachment: icsContent ? { filename: 'session-invite.ics', content: icsContent } : undefined,
   });
 }
 
-module.exports = { sendConfirmationEmail, sendStatusChangeEmail };
+async function sendCalendarInviteEmail(submission, icsContent) {
+  const link = selfServiceLink(submission.editToken);
+  await getProvider().send({
+    to: submission.email,
+    subject: `Your session is scheduled: ${submission.talkTitle}`,
+    body:
+      `Hi ${submission.name},\n\n` +
+      `Your talk "${submission.talkTitle}" has been scheduled for ${submission.sessionDay} ` +
+      `${submission.sessionStart}-${submission.sessionEnd} in ${submission.sessionRoom}.\n\n` +
+      `A calendar invite is attached — add it to Gmail, Outlook, or iCal.\n\n` +
+      `View your submission here: ${link}`,
+    attachment: { filename: 'session-invite.ics', content: icsContent },
+  });
+}
+
+module.exports = { sendConfirmationEmail, sendStatusChangeEmail, sendCalendarInviteEmail };

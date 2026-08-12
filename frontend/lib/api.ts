@@ -17,7 +17,27 @@ export interface Submission {
   aiSuggestedTrack: string;
   evaluatorScore: number | null;
   evaluatorNotes: string;
+  sessionDay: string;
+  sessionRoom: string;
+  sessionStart: string;
+  sessionEnd: string;
   createdTime: string;
+}
+
+export interface AgendaSession extends Submission {
+  conflictsWith: string[];
+}
+
+export interface DashboardBucket {
+  count: number;
+  items: Array<{ id: string; name: string; talkTitle: string; status: SubmissionStatus }>;
+}
+
+export interface DashboardStats {
+  totalSubmissions: number;
+  acceptedUnscheduled: DashboardBucket;
+  unscored: DashboardBucket;
+  missingMaterials: DashboardBucket;
 }
 
 export interface SpeakerFormValues {
@@ -114,6 +134,33 @@ export function adminUpdateEvaluation(
 export function adminScoreSubmission(adminKey: string, id: string) {
   return request<{ submission: Submission }>(`/api/admin/submissions/${id}/score`, {
     method: 'POST',
+    headers: adminHeaders(adminKey),
+  });
+}
+
+export function adminGetAgenda(adminKey: string) {
+  return request<{ sessions: AgendaSession[] }>('/api/admin/agenda', {
+    headers: adminHeaders(adminKey),
+  });
+}
+
+export function adminUpdateSchedule(
+  adminKey: string,
+  id: string,
+  values: { sessionDay: string; sessionRoom: string; sessionStart: string; sessionEnd: string }
+) {
+  return request<{ submission: Submission; conflictsWith: string[] }>(
+    `/api/admin/submissions/${id}/schedule`,
+    {
+      method: 'PATCH',
+      headers: adminHeaders(adminKey),
+      body: JSON.stringify(values),
+    }
+  );
+}
+
+export function adminGetDashboard(adminKey: string) {
+  return request<DashboardStats>('/api/admin/dashboard', {
     headers: adminHeaders(adminKey),
   });
 }

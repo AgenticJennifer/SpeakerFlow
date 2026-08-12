@@ -34,6 +34,10 @@ function toSubmission(record, { includeToken = false } = {}) {
     aiSuggestedTrack: record.get(FIELDS.AI_SUGGESTED_TRACK) || '',
     evaluatorScore: record.get(FIELDS.EVALUATOR_SCORE) ?? null,
     evaluatorNotes: record.get(FIELDS.EVALUATOR_NOTES) || '',
+    sessionDay: record.get(FIELDS.SESSION_DAY) || '',
+    sessionRoom: record.get(FIELDS.SESSION_ROOM) || '',
+    sessionStart: record.get(FIELDS.SESSION_START) || '',
+    sessionEnd: record.get(FIELDS.SESSION_END) || '',
     createdTime: record._rawJson.createdTime,
   };
   if (includeToken) {
@@ -161,6 +165,81 @@ async function updateSubmissionScore(id, { aiScore, aiRationale, aiSummary, aiSu
   return toSubmission(updated);
 }
 
+// --- Agenda / scheduling ------------------------------------------------
+// HH:MM strings compare correctly with plain string comparison (zero-padded,
+// no timezone math needed since a single conference runs on one local clock).
+function timeRangesOverlap(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && bStart < aEnd;
+}
+
+function sessionsConflict(a, b) {
+  return (
+    a.id !== b.id &&
+    a.sessionDay &&
+    b.sessionDay &&
+    a.sessionDay === b.sessionDay &&
+    a.sessionRoom &&
+    b.sessionRoom &&
+    a.sessionRoom === b.sessionRoom &&
+    timeRangesOverlap(a.sessionStart, a.sessionEnd, b.sessionStart, b.sessionEnd)
+  );
+}
+
+async function getAgenda() {
+  const scheduled = await listSubmissions({ status: STATUS.ACCEPTED });
+  const withSchedule = scheduled.filter((s) => s.sessionDay && s.sessionRoom && s.sessionStart && s.sessionEnd);
+
+  return withSchedule.map((session) => ({
+    ...session,
+    conflictsWith: withSchedule
+      .filter((other) => sessionsConflict(session, other))
+      .map((other) => other.id),
+  }));
+}
+
+async function updateSubmissionSchedule(id, { sessionDay, sessionRoom, sessionStart, sessionEnd }) {
+  const updated = await withRetry(() =>
+    getTable().update(id, {
+      [FIELDS.SESSION_DAY]: sessionDay || '',
+      [FIELDS.SESSION_ROOM]: sessionRoom || '',
+      [FIELDS.SESSION_START]: sessionStart || '',
+      [FIELDS.SESSION_END]: sessionEnd || '',
+    })
+  );
+  const submission = toSubmission(updated, { includeToken: true });
+
+  const agenda = await getAgenda();
+  const conflictsWith = agenda.find((s) => s.id === id)?.conflictsWith || [];
+
+  return { submission, conflictsWith };
+}
+
+async function getDashboardStats() {
+  const all = await listSubmissions({});
+
+  const acceptedUnscheduled = all.filter(
+    (s) => s.status === STATUS.ACCEPTED && !(s.sessionDay && s.sessionRoom && s.sessionStart && s.sessionEnd)
+  );
+  const unscored = all.filter(
+    (s) =>
+      (s.status === STATUS.SUBMITTED || s.status === STATUS.UNDER_REVIEW) &&
+      s.aiSuggestedScore == null &&
+      s.evaluatorScore == null
+  );
+  const missingMaterials = all.filter(
+    (s) => s.status === STATUS.ACCEPTED && (!s.bio || !s.talkDescription)
+  );
+
+  const summarize = (s) => ({ id: s.id, name: s.name, talkTitle: s.talkTitle, status: s.status });
+
+  return {
+    totalSubmissions: all.length,
+    acceptedUnscheduled: { count: acceptedUnscheduled.length, items: acceptedUnscheduled.map(summarize) },
+    unscored: { count: unscored.length, items: unscored.map(summarize) },
+    missingMaterials: { count: missingMaterials.length, items: missingMaterials.map(summarize) },
+  };
+}
+
 // --- Demo data (judge demo mode) --------------------------------------------
 // Demo records are marked by this email domain so they can be wiped in one
 // call without touching real submissions.
@@ -222,6 +301,9 @@ module.exports = {
   updateSubmissionStatus,
   updateSubmissionEvaluation,
   updateSubmissionScore,
+  getAgenda,
+  updateSubmissionSchedule,
+  getDashboardStats,
   seedDemoSubmissions,
   clearDemoSubmissions,
   DEMO_EMAIL_DOMAIN,

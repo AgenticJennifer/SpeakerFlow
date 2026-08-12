@@ -12,6 +12,10 @@ const FIELDS = {
   AI_SUGGESTED_TRACK: 'AI Suggested Track',
   EVALUATOR_SCORE: 'Evaluator Score',
   EVALUATOR_NOTES: 'Evaluator Notes',
+  SESSION_DAY: 'Session Day',
+  SESSION_ROOM: 'Session Room',
+  SESSION_START: 'Session Start',
+  SESSION_END: 'Session End',
 };
 
 const STATUS = {

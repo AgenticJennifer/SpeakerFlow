@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminLogin from '@/components/AdminLogin';
 import DemoModeControls from '@/components/DemoModeControls';
@@ -48,6 +49,12 @@ function AdminDashboard({ adminKey, clearAdminKey }: { adminKey: string; clearAd
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold text-slate-900">Admin dashboard</h1>
           <div className="flex items-center gap-4">
+            <Link href="/admin/agenda" className="text-sm text-slate-500 hover:text-slate-700">
+              Agenda
+            </Link>
+            <Link href="/admin/dashboard" className="text-sm text-slate-500 hover:text-slate-700">
+              Onboarding
+            </Link>
             <DemoModeControls adminKey={adminKey} hasDemoData={hasDemoData} onChanged={reload} />
             <button onClick={clearAdminKey} className="text-sm text-slate-500 hover:text-slate-700">
               Sign out
