@@ -1,4 +1,4 @@
-# Sessionboard Clone (Hackathon MVP)
+# SpeakerFlow
 
 Open-source clone of Sessionboard: speaker submission, self-service portal, admin review dashboard,
 status-change email notifications, and AI-assisted evaluator scoring.
