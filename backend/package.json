@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "test": "node --check index.js && node --check controllers/speakers.js && node --check controllers/admin.js && node --check models/airtable.js && node --check services/email.js && node --check services/openaiScoring.js && node --check middleware/adminAuth.js && node --check lib/withRetry.js && node --check constants/fields.js && node --check routes/speakers.js && node --check routes/admin.js"
+    "test": "node --test tests/*.test.js"
   },
   "keywords": [],
   "author": "",
