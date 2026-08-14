@@ -19,6 +19,13 @@ const DEMO_SUBMISSIONS = [
     aiSuggestedTrack: 'Infrastructure & Observability',
     evaluatorScore: 9,
     evaluatorNotes: 'Headline talk material. Confirmed for main stage.',
+    // Intentionally overlaps Tomás Rivera below (same day+room, overlapping
+    // time) so the agenda's conflict detection + Auto-Resolve are visible
+    // to judges from a fresh seed, not only after manual scheduling.
+    sessionDay: '2026-09-15',
+    sessionRoom: 'Room A',
+    sessionStart: '10:00',
+    sessionEnd: '10:45',
   },
   {
     name: 'Tomás Rivera',
@@ -36,6 +43,50 @@ const DEMO_SUBMISSIONS = [
     aiSuggestedTrack: 'Security',
     evaluatorScore: 8,
     evaluatorNotes: 'Great demos. Needs AV check for the live portions.',
+    sessionDay: '2026-09-15',
+    sessionRoom: 'Room A',
+    sessionStart: '10:30',
+    sessionEnd: '11:15',
+  },
+  {
+    name: 'Priya Nair',
+    email: 'priya@demo.sessionboard.local',
+    bio: 'Platform engineer; leads the internal developer platform team at a fintech.',
+    talkTitle: 'Self-Service Infra Without the 2AM Pages',
+    talkDescription:
+      'How we built a golden-path platform that let product teams ship their own services without paging platform on-call. The abstractions that worked, the ones we had to walk back, and how we measured adoption.',
+    status: 'Accepted',
+    aiSuggestedScore: 8,
+    aiRationale:
+      'Strong platform-engineering case study with a clear before/after and measurable adoption story.',
+    aiSummary:
+      'A platform team built a golden-path internal developer platform that let product teams self-serve infrastructure without paging on-call. Covers the abstractions that worked and the ones that had to be walked back.',
+    aiSuggestedTrack: 'Infrastructure & Observability',
+    evaluatorScore: 8,
+    evaluatorNotes: 'Accepted — still needs a room/time slot.',
+    // Deliberately left unscheduled so the onboarding dashboard's "Accepted,
+    // unscheduled" bucket and the "unscheduled" reminder are demoable.
+  },
+  {
+    name: 'Owen Bradley',
+    email: 'owen@demo.sessionboard.local',
+    bio: '',
+    talkTitle: 'Scaling Postgres Past a Billion Rows',
+    talkDescription: '',
+    status: 'Accepted',
+    aiSuggestedScore: 7,
+    aiRationale: 'Promising topic; bio and abstract still needed before publishing to the schedule.',
+    aiSummary: 'Talk on scaling Postgres past a billion rows; full abstract pending from the speaker.',
+    aiSuggestedTrack: 'Infrastructure & Observability',
+    evaluatorScore: 7,
+    evaluatorNotes: 'Accepted on the strength of the title + past talks. Waiting on bio and abstract.',
+    // Scheduled but bio/talkDescription intentionally blank so the "Missing
+    // materials" dashboard bucket and the "missingMaterials" reminder are
+    // demoable from a fresh seed. Non-conflicting slot (different room).
+    sessionDay: '2026-09-15',
+    sessionRoom: 'Room B',
+    sessionStart: '10:00',
+    sessionEnd: '10:45',
   },
   {
     name: 'Grace Lindqvist',

@@ -267,6 +267,12 @@ async function seedDemoSubmissions(rows) {
           [FIELDS.EVALUATOR_SCORE]: row.evaluatorScore,
           [FIELDS.EVALUATOR_NOTES]: row.evaluatorNotes || '',
         }),
+        ...(row.sessionDay != null && {
+          [FIELDS.SESSION_DAY]: row.sessionDay,
+          [FIELDS.SESSION_ROOM]: row.sessionRoom,
+          [FIELDS.SESSION_START]: row.sessionStart,
+          [FIELDS.SESSION_END]: row.sessionEnd,
+        }),
       })
     );
     created.push(toSubmission(record));
