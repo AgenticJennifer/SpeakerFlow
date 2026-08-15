@@ -6,14 +6,16 @@ describe('Backend basic tests', () => {
     assert.strictEqual(1 + 1, 2);
   });
 
-  it('should load constants', () => {
-    const fields = require('../constants/fields');
-    assert.ok(fields);
-    assert.ok(Array.isArray(fields.speakerFields));
+  it('should load field constants', () => {
+    const { FIELDS, STATUS, DECIDED_STATUSES } = require('../constants/fields');
+    assert.strictEqual(FIELDS.NAME, 'Name');
+    assert.strictEqual(STATUS.ACCEPTED, 'Accepted');
+    assert.ok(DECIDED_STATUSES.includes(STATUS.ACCEPTED));
   });
 
-  it('should load models', () => {
-    const Airtable = require('../models/airtable');
-    assert.ok(typeof Airtable === 'function');
+  it('should expose Airtable model operations', () => {
+    const airtable = require('../models/airtable');
+    assert.strictEqual(typeof airtable.createSpeakerSubmission, 'function');
+    assert.strictEqual(typeof airtable.listSubmissions, 'function');
   });
 });
